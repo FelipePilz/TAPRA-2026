@@ -1,7 +1,6 @@
 import logging
 import azure.functions as func
 import os
-
 import pyodbc
 
 app = func.FunctionApp()
@@ -15,17 +14,19 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
     user_sql = os.getenv("USER")
     pass_sql = os.getenv("PASSWORD")
 
-    #como montar uma string de conexão com o pyodbc azure database sql 
-
+    # Montar string de conexão
     string_conexao = f"DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={host_sql};DATABASE={database_sql};UID={user_sql};PWD={pass_sql}"
 
-conexao = pyodbc.connect(string_conexao)
+    # Abrir conexão
+    conexao = pyodbc.connect(string_conexao)
 
+    # Fazer SELECT
     cursor = conexao.cursor()
     cursor.execute("SELECT * FROM itsm.chamado")
 
     dados = cursor.fetchall()
 
+    # Imprimir usando logging
     for dado in dados:
         logging.info(dado)
 
