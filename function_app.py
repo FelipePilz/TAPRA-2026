@@ -20,3 +20,13 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
     string_conexao = f"DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={host_sql};DATABASE={database_sql};UID={user_sql};PWD={pass_sql}"
 
 conexao = pyodbc.connect(string_conexao)
+
+    cursor = conexao.cursor()
+    cursor.execute("SELECT * FROM itsm.chamado")
+
+    dados = cursor.fetchall()
+
+    for dado in dados:
+        logging.info(dado)
+
+    conexao.close()
