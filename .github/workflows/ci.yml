@@ -19,7 +19,7 @@ jobs:
       id-token: write
       contents: read
     env:
-      AZURE_FUNCTIONAPP_NAME: 'funcapp-tapra-rafaela'
+      AZURE_FUNCTIONAPP_NAME: funcapp-tapra-rafaela
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
