@@ -1,24 +1,30 @@
-import csv
-import io
 import logging
 import os
-from datetime import datetime, timezone
 
-import pyodbc
 import azure.functions as func
-from azure.storage.filedatalake import DataLakeServiceClient
+import pyodbc
+
 
 app = func.FunctionApp()
 
-# Mudamos temporariamente para HTTP Trigger para você conseguir testar clicando num link
-@app.route(route="testar_extracao", auth_level=func.AuthLevel.ANONYMOUS)
-def extract_chamado(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Função acionada via HTTP!')
-    
+
+def extract_table(table_name: str) -> None:
+    """
+    Extrai os dados de uma tabela do SQL Server.
+    """
+
+    logging.info(f"Iniciando extração da tabela itsm.{table_name}")
+
     sql_server = os.getenv("HOST")
     sql_database = os.getenv("DATABASE")
     sql_user = os.getenv("USER")
     sql_pass = os.getenv("PASSWORD")
+
+    # Valida as variáveis de ambiente
+    if not all([sql_server, sql_database, sql_user, sql_pass]):
+        raise ValueError(
+            "Uma ou mais variáveis de conexão com o SQL Server não foram configuradas."
+        )
 
     conn_str = (
         "DRIVER={ODBC Driver 18 for SQL Server};"
@@ -34,27 +40,160 @@ def extract_chamado(req: func.HttpRequest) -> func.HttpResponse:
     try:
         with pyodbc.connect(conn_str) as conn:
             cursor = conn.cursor()
-            query = "select * from itsm.chamado"
+
+            query = f"SELECT * FROM itsm.{table_name}"
+
             cursor.execute(query)
+
             rows = cursor.fetchall()
-            columns = [col[0] for col in cursor.description]
-            logging.info(f'{len(rows)} linhas lidas de itsm.chamado')
 
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(columns)
-        writer.writerows(rows)
+            logging.info(
+                f"Tabela itsm.{table_name}: "
+                f"{len(rows)} registros encontrados."
+            )
 
-        now = datetime.now(timezone.utc)
-        file_path = f"chamado/{now:%Y/%m/%d}/chamado_{now:%Y%m%d_%H%M%S}.csv"
+    except Exception:
+        logging.exception(
+            f"Erro ao ler a tabela itsm.{table_name}"
+        )
+        raise
 
-        datalake = DataLakeServiceClient.from_connection_string(os.getenv("DATALAKE_CONNECTION_STRING"))
-        file_client = datalake.get_file_system_client("bronze").get_file_client(file_path)
-        file_client.upload_data(buffer.getvalue().encode("utf-8"), overwrite=True)
 
-        return func.HttpResponse(f"Sucesso! Arquivo gravado em bronze/{file_path}", status_code=200)
+# =====================================================
+# TIMER TRIGGER - CHAMADO
+# =====================================================
 
-    except Exception as e:
-        error_msg = f"Erro ao ler itsm.chamado: {str(e)}"
-        logging.error(error_msg)
-        return func.HttpResponse(error_msg, status_code=500)
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_chamado(myTimer: func.TimerRequest) -> None:
+    extract_table("chamado")
+
+
+# =====================================================
+# TIMER TRIGGER - CATEGORIA
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_categoria(myTimer: func.TimerRequest) -> None:
+    extract_table("categoria")
+
+
+# =====================================================
+# TIMER TRIGGER - ANALISTA
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_analista(myTimer: func.TimerRequest) -> None:
+    extract_table("analista")
+
+
+# =====================================================
+# TIMER TRIGGER - CHAMADO SLA
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_chamado_sla(myTimer: func.TimerRequest) -> None:
+    extract_table("chamado_sla")
+
+
+# =====================================================
+# TIMER TRIGGER - CHAMADO STATUS HISTORICO
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_chamado_status_historico(myTimer: func.TimerRequest) -> None:
+    extract_table("chamado_status_historico")
+
+
+# =====================================================
+# TIMER TRIGGER - CLIENTE ORGANIZACAO
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_cliente_organizacao(myTimer: func.TimerRequest) -> None:
+    extract_table("cliente_organizacao")
+
+
+# =====================================================
+# TIMER TRIGGER - CSAT AVALIACAO
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_csat_avaliacao(myTimer: func.TimerRequest) -> None:
+    extract_table("csat_avaliacao")
+
+
+# =====================================================
+# TIMER TRIGGER - FILA
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_fila(myTimer: func.TimerRequest) -> None:
+    extract_table("fila")
+
+
+# =====================================================
+# TIMER TRIGGER - SLA
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_sla(myTimer: func.TimerRequest) -> None:
+    extract_table("sla")
+
+
+# =====================================================
+# TIMER TRIGGER - SOLICITANTE
+# =====================================================
+
+@app.timer_trigger(
+    schedule="0 * * * * *",
+    arg_name="myTimer",
+    run_on_startup=False,
+    use_monitor=False
+)
+def extract_solicitante(myTimer: func.TimerRequest) -> None:
+    extract_table("solicitante")
